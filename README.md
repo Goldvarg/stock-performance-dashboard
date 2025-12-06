@@ -15,14 +15,6 @@ A simple dashboard that shows you which stocks are killing it and which ones are
 - Displays current price, percentage change, and a mini price chart
 - Data refreshes every time you load the page
 
-## Time periods
-
-- 1 Day
-- 1 Week
-- 1 Month
-- 1 Year
-- 3 Years
-- 5 Years
 
 ## Tech
 
@@ -31,6 +23,3 @@ A simple dashboard that shows you which stocks are killing it and which ones are
 - Yahoo Finance data via CORS proxy
 - Hosted on GitHub Pages
 
-
-npx serve
-```
