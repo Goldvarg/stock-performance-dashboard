@@ -2,7 +2,8 @@
 
 A simple dashboard that shows you which stocks are killing it and which ones are tanking - across different time periods from 1 day to 5 years.
 
-**[View Live Dashboard](https://goldvarg.github.io/stock-performance-dashboard/)**
+## **[View Live Dashboard](https://goldvarg.github.io/stock-performance-dashboard/)**
+
 
 <img width="1358" height="716" alt="Screenshot 2025-12-06 at 13 08 38" src="https://github.com/user-attachments/assets/ee0c02b9-f934-4c1f-9bc5-206feccfee04" />
 
