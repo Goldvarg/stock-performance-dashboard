@@ -31,10 +31,6 @@ A simple dashboard that shows you which stocks are killing it and which ones are
 - Yahoo Finance data via CORS proxy
 - Hosted on GitHub Pages
 
-## Run locally
 
-Just open `index.html` in your browser, or:
-
-```bash
 npx serve
 ```
