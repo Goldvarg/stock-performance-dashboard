@@ -4,7 +4,7 @@ A simple dashboard that shows you which stocks are killing it and which ones are
 
 **[View Live Dashboard](https://goldvarg.github.io/stock-performance-dashboard/)**
 
-![Dashboard Screenshot](https://image.thum.io/get/width/1200/crop/800/https://goldvarg.github.io/stock-performance-dashboard/)
+![Dashboard Screenshot](https://image.thum.io/get/width/1200/crop/900/wait/15/https://goldvarg.github.io/stock-performance-dashboard/)
 
 ## What it does
 
