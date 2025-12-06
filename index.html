@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: #111;
+            border-bottom: 1px solid #222;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background-color: #222;
+            color: #fff;
+        }
+
+        .nav-btn.active {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+
+        .main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #222;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            width: 300px;
+            height: 4px;
+            background-color: #222;
+            border-radius: 2px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #2563eb;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        .error {
+            background-color: #1a0a0a;
+            border: 1px solid #4a1a1a;
+            color: #ff6b6b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title.gainers::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #10b981;
+            border-radius: 2px;
+        }
+
+        .section-title.losers::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #ef4444;
+            border-radius: 2px;
+        }
+
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stock-card {
+            background-color: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .stock-card:hover {
+            border-color: #333;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-symbol {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stock-name {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .stock-metrics {
+            text-align: right;
+        }
+
+        .stock-price {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stock-change {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .stock-change.positive {
+            color: #10b981;
+        }
+
+        .stock-change.negative {
+            color: #ef4444;
+        }
+
+        .chart-container {
+            height: 120px;
+            margin-top: 1rem;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #444;
+            font-size: 0.75rem;
+            margin-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .main {
+                padding: 1rem;
+            }
+
+            .stocks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Stock Performance Dashboard</h1>
+        <nav class="nav" id="nav">
+            <button class="nav-btn active" data-period="1d">1 Day</button>
+            <button class="nav-btn" data-period="1w">1 Week</button>
+            <button class="nav-btn" data-period="1m">1 Month</button>
+            <button class="nav-btn" data-period="1y">1 Year</button>
+            <button class="nav-btn" data-period="3y">3 Years</button>
+            <button class="nav-btn" data-period="5y">5 Years</button>
+        </nav>
+    </header>
+
+    <main class="main" id="main">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading stock data...</p>
+        </div>
+    </main>
+
+    <script>
+        // Curated list of major S&P 500 stocks
+        const STOCK_UNIVERSE = [
+            { symbol: 'AAPL', name: 'Apple Inc.' },
+            { symbol: 'MSFT', name: 'Microsoft Corporation' },
+            { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+            { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+            { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+            { symbol: 'META', name: 'Meta Platforms Inc.' },
+            { symbol: 'TSLA', name: 'Tesla Inc.' },
+            { symbol: 'BRK-B', name: 'Berkshire Hathaway' },
+            { symbol: 'JPM', name: 'JPMorgan Chase & Co.' },
+            { symbol: 'V', name: 'Visa Inc.' },
+            { symbol: 'JNJ', name: 'Johnson & Johnson' },
+            { symbol: 'WMT', name: 'Walmart Inc.' },
+            { symbol: 'MA', name: 'Mastercard Inc.' },
+            { symbol: 'PG', name: 'Procter & Gamble' },
+            { symbol: 'HD', name: 'Home Depot Inc.' },
+            { symbol: 'CVX', name: 'Chevron Corporation' },
+            { symbol: 'MRK', name: 'Merck & Co.' },
+            { symbol: 'ABBV', name: 'AbbVie Inc.' },
+            { symbol: 'PEP', name: 'PepsiCo Inc.' },
+            { symbol: 'KO', name: 'Coca-Cola Company' },
+            { symbol: 'COST', name: 'Costco Wholesale' },
+            { symbol: 'AVGO', name: 'Broadcom Inc.' },
+            { symbol: 'TMO', name: 'Thermo Fisher Scientific' },
+            { symbol: 'MCD', name: 'McDonald\'s Corporation' },
+            { symbol: 'CSCO', name: 'Cisco Systems' },
+            { symbol: 'ACN', name: 'Accenture plc' },
+            { symbol: 'ABT', name: 'Abbott Laboratories' },
+            { symbol: 'DHR', name: 'Danaher Corporation' },
+            { symbol: 'NKE', name: 'Nike Inc.' },
+            { symbol: 'ORCL', name: 'Oracle Corporation' },
+            { symbol: 'CRM', name: 'Salesforce Inc.' },
+            { symbol: 'AMD', name: 'Advanced Micro Devices' },
+            { symbol: 'INTC', name: 'Intel Corporation' },
+            { symbol: 'NFLX', name: 'Netflix Inc.' },
+            { symbol: 'ADBE', name: 'Adobe Inc.' },
+            { symbol: 'TXN', name: 'Texas Instruments' },
+            { symbol: 'UNH', name: 'UnitedHealth Group' },
+            { symbol: 'LLY', name: 'Eli Lilly and Company' },
+            { symbol: 'PM', name: 'Philip Morris International' },
+            { symbol: 'UPS', name: 'United Parcel Service' },
+            { symbol: 'BA', name: 'Boeing Company' },
+            { symbol: 'CAT', name: 'Caterpillar Inc.' },
+            { symbol: 'GE', name: 'General Electric' },
+            { symbol: 'IBM', name: 'IBM Corporation' },
+            { symbol: 'GS', name: 'Goldman Sachs' },
+            { symbol: 'MS', name: 'Morgan Stanley' },
+            { symbol: 'AXP', name: 'American Express' },
+            { symbol: 'SPGI', name: 'S&P Global Inc.' },
+            { symbol: 'BLK', name: 'BlackRock Inc.' },
+            { symbol: 'C', name: 'Citigroup Inc.' },
+            { symbol: 'SCHW', name: 'Charles Schwab' },
+            { symbol: 'WFC', name: 'Wells Fargo' },
+            { symbol: 'BAC', name: 'Bank of America' },
+            { symbol: 'T', name: 'AT&T Inc.' },
+            { symbol: 'VZ', name: 'Verizon Communications' },
+            { symbol: 'CMCSA', name: 'Comcast Corporation' },
+            { symbol: 'DIS', name: 'Walt Disney Company' },
+            { symbol: 'PYPL', name: 'PayPal Holdings' },
+            { symbol: 'SQ', name: 'Block Inc.' },
+            { symbol: 'SHOP', name: 'Shopify Inc.' },
+            { symbol: 'UBER', name: 'Uber Technologies' },
+            { symbol: 'ABNB', name: 'Airbnb Inc.' },
+            { symbol: 'ZM', name: 'Zoom Video Communications' },
+            { symbol: 'SNAP', name: 'Snap Inc.' },
+            { symbol: 'SPOT', name: 'Spotify Technology' },
+            { symbol: 'COIN', name: 'Coinbase Global' },
+            { symbol: 'PLTR', name: 'Palantir Technologies' },
+            { symbol: 'RBLX', name: 'Roblox Corporation' },
+            { symbol: 'RIVN', name: 'Rivian Automotive' },
+            { symbol: 'LCID', name: 'Lucid Group' },
+            { symbol: 'F', name: 'Ford Motor Company' },
+            { symbol: 'GM', name: 'General Motors' },
+            { symbol: 'XOM', name: 'Exxon Mobil' },
+            { symbol: 'COP', name: 'ConocoPhillips' },
+            { symbol: 'SLB', name: 'Schlumberger' },
+            { symbol: 'LMT', name: 'Lockheed Martin' },
+            { symbol: 'RTX', name: 'RTX Corporation' },
+            { symbol: 'NOC', name: 'Northrop Grumman' },
+            { symbol: 'DE', name: 'Deere & Company' },
+            { symbol: 'MMM', name: '3M Company' },
+            { symbol: 'HON', name: 'Honeywell International' },
+            { symbol: 'UNP', name: 'Union Pacific' },
+            { symbol: 'FDX', name: 'FedEx Corporation' },
+            { symbol: 'DAL', name: 'Delta Air Lines' },
+            { symbol: 'UAL', name: 'United Airlines' },
+            { symbol: 'AAL', name: 'American Airlines' },
+            { symbol: 'MAR', name: 'Marriott International' },
+            { symbol: 'HLT', name: 'Hilton Worldwide' },
+            { symbol: 'SBUX', name: 'Starbucks Corporation' },
+            { symbol: 'CMG', name: 'Chipotle Mexican Grill' },
+            { symbol: 'YUM', name: 'Yum! Brands' },
+            { symbol: 'DG', name: 'Dollar General' },
+            { symbol: 'TGT', name: 'Target Corporation' },
+            { symbol: 'LOW', name: 'Lowe\'s Companies' },
+            { symbol: 'TJX', name: 'TJX Companies' },
+            { symbol: 'LULU', name: 'Lululemon Athletica' },
+            { symbol: 'ETSY', name: 'Etsy Inc.' },
+            { symbol: 'EBAY', name: 'eBay Inc.' },
+            { symbol: 'ZS', name: 'Zscaler Inc.' },
+            { symbol: 'CRWD', name: 'CrowdStrike Holdings' }
+        ];
+
+        // Period configuration
+        const PERIODS = {
+            '1d': { label: '1 Day', range: '1d', interval: '5m' },
+            '1w': { label: '1 Week', range: '5d', interval: '15m' },
+            '1m': { label: '1 Month', range: '1mo', interval: '1d' },
+            '1y': { label: '1 Year', range: '1y', interval: '1d' },
+            '3y': { label: '3 Years', range: '3y', interval: '1wk' },
+            '5y': { label: '5 Years', range: '5y', interval: '1wk' }
+        };
+
+        let currentPeriod = '1d';
+        let stockDataCache = {};
+        let chartInstances = {};
+
+        // CORS proxy options
+        const CORS_PROXIES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?'
+        ];
+
+        let currentProxyIndex = 0;
+
+        async function fetchWithProxy(url) {
+            const proxy = CORS_PROXIES[currentProxyIndex];
+            try {
+                const response = await fetch(proxy + encodeURIComponent(url));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response;
+            } catch (error) {
+                // Try next proxy
+                currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
+                if (currentProxyIndex !== 0) {
+                    return fetchWithProxy(url);
+                }
+                throw error;
+            }
+        }
+
+        async function fetchStockData(symbol, period) {
+            const config = PERIODS[period];
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${config.range}&interval=${config.interval}`;
+
+            try {
+                const response = await fetchWithProxy(url);
+                const data = await response.json();
+
+                if (data.chart && data.chart.result && data.chart.result[0]) {
+                    const result = data.chart.result[0];
+                    const meta = result.meta;
+                    const timestamps = result.timestamp || [];
+                    const quotes = result.indicators.quote[0] || {};
+                    const closes = quotes.close || [];
+
+                    // Filter out null values
+                    const validData = timestamps.map((ts, i) => ({
+                        timestamp: ts,
+                        close: closes[i]
+                    })).filter(d => d.close !== null && d.close !== undefined);
+
+                    if (validData.length < 2) {
+                        return null;
+                    }
+
+                    const firstPrice = validData[0].close;
+                    const lastPrice = validData[validData.length - 1].close;
+                    const change = lastPrice - firstPrice;
+                    const changePercent = ((lastPrice - firstPrice) / firstPrice) * 100;
+
+                    return {
+                        symbol,
+                        name: STOCK_UNIVERSE.find(s => s.symbol === symbol)?.name || symbol,
+                        currentPrice: lastPrice,
+                        change,
+                        changePercent,
+                        chartData: validData.map(d => ({
+                            x: new Date(d.timestamp * 1000),
+                            y: d.close
+                        }))
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error);
+                return null;
+            }
+        }
+
+        async function fetchAllStocks(period) {
+            const cacheKey = period;
+            const total = STOCK_UNIVERSE.length;
+
+            // Show loading
+            showLoading(0, total);
+
+            const batchSize = 10;
+            const results = [];
+            let loaded = 0;
+
+            for (let i = 0; i < STOCK_UNIVERSE.length; i += batchSize) {
+                const batch = STOCK_UNIVERSE.slice(i, i + batchSize);
+                const batchPromises = batch.map(stock => fetchStockData(stock.symbol, period));
+                const batchResults = await Promise.all(batchPromises);
+                results.push(...batchResults.filter(r => r !== null));
+
+                loaded = Math.min(i + batchSize, total);
+                updateProgress(loaded, total);
+
+                // Small delay between batches to avoid rate limiting
+                if (i + batchSize < STOCK_UNIVERSE.length) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+
+            stockDataCache[cacheKey] = results;
+            return results;
+        }
+
+        function getTopGainersAndLosers(stocks) {
+            const sorted = [...stocks].sort((a, b) => b.changePercent - a.changePercent);
+            return {
+                gainers: sorted.slice(0, 3),
+                losers: sorted.slice(-3).reverse()
+            };
+        }
+
+        function showLoading(progress = 0, total = 0) {
+            const progressPercent = total > 0 ? Math.round((progress / total) * 100) : 0;
+            document.getElementById('main').innerHTML = `
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading stock data...</p>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <p class="progress-text">${progress > 0 ? `${progress} of ${total} stocks loaded` : 'Initializing...'}</p>
+                </div>
+            `;
+        }
+
+        function updateProgress(progress, total) {
+            const progressBar = document.querySelector('.progress-bar');
+            const progressText = document.querySelector('.progress-text');
+            if (progressBar && progressText) {
+                const progressPercent = Math.round((progress / total) * 100);
+                progressBar.style.width = `${progressPercent}%`;
+                progressText.textContent = `${progress} of ${total} stocks loaded`;
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('main').innerHTML = `
+                <div class="error">${message}</div>
+            `;
+        }
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(price);
+        }
+
+        function formatPercent(percent) {
+            const sign = percent >= 0 ? '+' : '';
+            return `${sign}${percent.toFixed(2)}%`;
+        }
+
+        function createChart(canvas, data, isGainer) {
+            const ctx = canvas.getContext('2d');
+            const color = isGainer ? '#10b981' : '#ef4444';
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#1a1a1a',
+                            titleColor: '#fff',
+                            bodyColor: '#e0e0e0',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return formatPrice(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            display: false
+                        },
+                        y: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function renderStockCard(stock, isGainer) {
+            const changeClass = stock.changePercent >= 0 ? 'positive' : 'negative';
+            const canvasId = `chart-${stock.symbol}-${currentPeriod}`;
+
+            return `
+                <div class="stock-card">
+                    <div class="stock-header">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-metrics">
+                            <div class="stock-price">${formatPrice(stock.currentPrice)}</div>
+                            <div class="stock-change ${changeClass}">${formatPercent(stock.changePercent)}</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="${canvasId}"></canvas>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboard(stocks) {
+            const { gainers, losers } = getTopGainersAndLosers(stocks);
+            const periodLabel = PERIODS[currentPeriod].label;
+
+            const html = `
+                <section class="section">
+                    <h2 class="section-title gainers">Top Gainers (${periodLabel})</h2>
+                    <div class="stocks-grid">
+                        ${gainers.map(stock => renderStockCard(stock, true)).join('')}
+                    </div>
+                </section>
+                <section class="section">
+                    <h2 class="section-title losers">Top Losers (${periodLabel})</h2>
+                    <div class="stocks-grid">
+                        ${losers.map(stock => renderStockCard(stock, false)).join('')}
+                    </div>
+                </section>
+                <div class="last-updated">
+                    Last updated: ${new Date().toLocaleString()} | Data from Yahoo Finance
+                </div>
+            `;
+
+            document.getElementById('main').innerHTML = html;
+
+            // Destroy existing chart instances
+            Object.values(chartInstances).forEach(chart => chart.destroy());
+            chartInstances = {};
+
+            // Create charts for gainers
+            gainers.forEach(stock => {
+                const canvasId = `chart-${stock.symbol}-${currentPeriod}`;
+                const canvas = document.getElementById(canvasId);
+                if (canvas) {
+                    chartInstances[canvasId] = createChart(canvas, stock.chartData, true);
+                }
+            });
+
+            // Create charts for losers
+            losers.forEach(stock => {
+                const canvasId = `chart-${stock.symbol}-${currentPeriod}`;
+                const canvas = document.getElementById(canvasId);
+                if (canvas) {
+                    chartInstances[canvasId] = createChart(canvas, stock.chartData, false);
+                }
+            });
+        }
+
+        async function loadPeriod(period) {
+            currentPeriod = period;
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+
+            try {
+                // Check cache first
+                if (stockDataCache[period]) {
+                    renderDashboard(stockDataCache[period]);
+                } else {
+                    const stocks = await fetchAllStocks(period);
+                    if (stocks.length === 0) {
+                        showError('Unable to fetch stock data. Please try again later.');
+                    } else {
+                        renderDashboard(stocks);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError(`Error loading stock data: ${error.message}`);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('nav').addEventListener('click', (e) => {
+            if (e.target.classList.contains('nav-btn')) {
+                loadPeriod(e.target.dataset.period);
+            }
+        });
+
+        // Load Chart.js time adapter
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js';
+        script.onload = () => {
+            // Initialize
+            loadPeriod('1d');
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

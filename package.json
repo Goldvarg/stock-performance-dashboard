@@ -1,0 +1,19 @@
+{
+  "name": "stock-performance-dashboard",
+  "version": "1.0.0",
+  "description": "A stock performance dashboard showing top gainers and losers across different time periods",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 3000",
+    "dev": "npx serve -l 3000"
+  },
+  "keywords": [
+    "stocks",
+    "dashboard",
+    "finance",
+    "gainers",
+    "losers"
+  ],
+  "author": "",
+  "license": "MIT"
+}
